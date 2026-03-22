@@ -188,25 +188,10 @@
 
     <!-- ── ESCUELAS VISITANTES ────────────────────────────────────────────── -->
     <div class="tab-content" id="tab-escuelas">
-      <div class="kpi-grid" style="margin-bottom:20px">
-        <div class="kpi">
-          <div class="kpi-accent" style="background:#ef4444"></div>
-          <div class="kpi-label">Sesiones demo</div>
-          <div class="kpi-val" style="color:var(--red)">22</div>
-          <div class="kpi-sub">escuelas visitantes</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-accent" style="background:#f59e0b"></div>
-          <div class="kpi-label">Instituciones</div>
-          <div class="kpi-val" style="color:var(--amber)">13</div>
-          <div class="kpi-sub">distintas</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-accent" style="background:#1e40af"></div>
-          <div class="kpi-label">Período de demos</div>
-          <div class="kpi-val" style="color:var(--blue);font-size:18px">Nov–Mar</div>
-          <div class="kpi-sub">100% en P2</div>
-        </div>
+      <div class="kpi-grid" id="escuelas-kpis"></div>
+      <div class="panel">
+        <div class="panel-header"><h2>Demos por mes</h2><div class="line"></div></div>
+        <canvas id="demoChart" height="110"></canvas>
       </div>
       <div class="panel">
         <div class="panel-header"><h2>Instituciones visitantes</h2><div class="line"></div></div>
