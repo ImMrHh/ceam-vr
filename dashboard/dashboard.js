@@ -221,13 +221,14 @@ function buildOverview() {
   const materias   = new Set(clases.map(r => r.Materia).filter(Boolean));
   const dias       = new Set(confirmed.map(r => r.Fecha).filter(Boolean));
 
-  // Growth calc
+  // Monthly average
   const byMonth = groupBy(confirmed, r => getMonthKey(r.Fecha));
   const months  = Object.keys(byMonth).sort();
-  let p1=0, p2=0;
-  months.forEach((m,i) => { if(i < Math.ceil(months.length/2)) p1+=byMonth[m]; else p2+=byMonth[m]; });
-  const growth = p1 > 0 ? Math.round(((p2-p1)/p1)*100) : 0;
-  document.getElementById('growth-num').textContent = (growth>=0?'+':'')+growth+'%';
+  const avgMonthly = months.length > 0 ? Math.round(confirmed.length / months.length) : 0;
+  const growthEl = document.getElementById('growth-num');
+  const growthLbl = growthEl ? growthEl.nextElementSibling : null;
+  if (growthEl) growthEl.textContent = avgMonthly;
+  if (growthLbl) growthLbl.textContent = 'sesiones / mes';
 
   // KPIs
   const kpiData = [
@@ -607,11 +608,21 @@ function buildEscuelas() {
 }
 
 // ── Tab switch ────────────────────────────────────────────────────────────────
+const TAB_LABELS = {
+  overview: 'Overview', materias: 'Materias', profesores: 'Profesores',
+  cancelaciones: 'Cancelaciones', planeacion: 'Planeación', escuelas: 'Escuelas Visitantes'
+};
+
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
-  btn.classList.add('active');
+  // Highlight sidebar nav item
+  const navBtn = document.getElementById('nav-'+id);
+  if (navBtn) navBtn.classList.add('active');
+  // Update topbar title
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = TAB_LABELS[id] || id;
   if (!chartsBuilt[id]) {
     if (id==='overview')      buildOverview();
     if (id==='materias')      buildMaterias();

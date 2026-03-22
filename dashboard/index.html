@@ -45,161 +45,185 @@
 <!-- ── MAIN APP ───────────────────────────────────────────────────────────── -->
 <div id="main">
 
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-icon">VR</div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">VR</div>
       <div>
-        <div class="brand-name">Programa de Realidad Virtual · CEAM CDMX</div>
-        <div class="brand-sub">Dashboard de Impacto</div>
+        <div class="sidebar-brand-name">R. Virtual · CEAM</div>
+        <div class="sidebar-brand-sub">Dashboard de Impacto</div>
       </div>
     </div>
-    <div class="topbar-right">
-      <span class="period-badge">Ciclo 2025–2026</span>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Reportes</div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="nav-overview" onclick="switchTab('overview',this)">
+          <span class="nav-icon">◎</span> Overview
+        </button>
+        <button class="nav-item" id="nav-materias" onclick="switchTab('materias',this)">
+          <span class="nav-icon">⊞</span> Materias
+        </button>
+        <button class="nav-item" id="nav-profesores" onclick="switchTab('profesores',this)">
+          <span class="nav-icon">◈</span> Profesores
+        </button>
+        <button class="nav-item" id="nav-cancelaciones" onclick="switchTab('cancelaciones',this)">
+          <span class="nav-icon">◌</span> Cancelaciones
+        </button>
+        <button class="nav-item" id="nav-planeacion" onclick="switchTab('planeacion',this)">
+          <span class="nav-icon">◇</span> Planeación
+        </button>
+        <button class="nav-item" id="nav-escuelas" onclick="switchTab('escuelas',this)">
+          <span class="nav-icon">◉</span> Escuelas Visitantes
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-period">
+        Ciclo escolar
+        <span>2025 – 2026</span>
+      </div>
       <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
     </div>
-  </div>
+  </aside>
 
-  <div class="wrap">
+  <!-- CONTENT -->
+  <div class="content">
 
-    <!-- Header -->
-    <div class="dash-header">
-      <div>
-        <div class="dash-title">Reporte de <span>Impacto</span></div>
-        <div class="dash-period">Ciclo escolar 2025–2026 · Datos en tiempo real desde SharePoint</div>
-      </div>
-      <div class="growth-pill">
-        <div class="growth-num" id="growth-num">—</div>
-        <div class="growth-lbl">Crecimiento en el período</div>
-      </div>
-    </div>
-
-    <!-- Filter bar -->
-    <div class="filter-bar">
-      <span class="filter-label">Período:</span>
-      <div class="filter-toggles">
-        <button class="filter-btn active" id="btn-full"   onclick="setFilterMode('full')">Ciclo completo</button>
-        <button class="filter-btn"        id="btn-recent" onclick="setFilterMode('recent')">Desde Mar 10, 2026</button>
-      </div>
-      <div class="filter-divider"></div>
-      <div class="filter-range">
-        <label>De</label>
-        <input type="date" id="filter-from"/>
-        <label>a</label>
-        <input type="date" id="filter-to"/>
-        <button class="filter-apply" onclick="applyCustomFilter()">Aplicar</button>
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Overview</div>
+      <div class="topbar-right">
+        <div class="growth-pill">
+          <div class="growth-num" id="growth-num">—</div>
+          <div class="growth-lbl">sesiones / mes</div>
+        </div>
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('overview',this)">Overview</button>
-      <button class="tab" onclick="switchTab('materias',this)">Materias</button>
-      <button class="tab" onclick="switchTab('profesores',this)">Profesores</button>
-      <button class="tab" onclick="switchTab('cancelaciones',this)">Cancelaciones</button>
-      <button class="tab" onclick="switchTab('planeacion',this)">Planeación</button>
-      <button class="tab" onclick="switchTab('escuelas',this)">Escuelas Visitantes</button>
-    </div>
+    <div class="wrap">
 
-    <!-- ── OVERVIEW ───────────────────────────────────────────────────────── -->
-    <div class="tab-content active" id="tab-overview">
-      <div id="kpi-loading" class="loading">
-        <div class="spinner"></div><br>Cargando datos…
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <span class="filter-label">Período</span>
+        <div class="filter-toggles">
+          <button class="filter-btn active" id="btn-full"   onclick="setFilterMode('full')">Ciclo completo</button>
+          <button class="filter-btn"        id="btn-recent" onclick="setFilterMode('recent')">Desde Mar 10</button>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-range">
+          <label>De</label>
+          <input type="date" id="filter-from"/>
+          <label>a</label>
+          <input type="date" id="filter-to"/>
+          <button class="filter-apply" onclick="applyCustomFilter()">Aplicar</button>
+        </div>
       </div>
-      <div id="kpi-section" style="display:none">
-        <div class="kpi-grid" id="kpi-grid"></div>
-        <div class="callout" id="callout-box">
-          <p id="callout-text"></p>
+
+      <!-- ── OVERVIEW ─────────────────────────────────────────────────────── -->
+      <div class="tab-content active" id="tab-overview">
+        <div id="kpi-loading" class="loading">
+          <div class="spinner"></div><br>Cargando datos…
+        </div>
+        <div id="kpi-section" style="display:none">
+          <div class="kpi-grid" id="kpi-grid"></div>
+          <div class="callout" id="callout-box">
+            <p id="callout-text"></p>
+          </div>
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Tendencia mensual</h2>
+                <div class="line"></div>
+              </div>
+              <canvas id="barChart" height="180"></canvas>
+              <div class="legend">
+                <div class="leg-item"><div class="leg-dot" style="background:#1e40af"></div>Clases</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#7c3aed"></div>Admin</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Cancelaciones</div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Top 5 profesores</h2>
+                <div class="line"></div>
+              </div>
+              <canvas id="topChart" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MATERIAS ───────────────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-materias">
+        <div class="panel">
+          <div class="panel-header"><h2>Sesiones por materia</h2><div class="line"></div></div>
+          <canvas id="subjChart" height="200"></canvas>
+        </div>
+        <div class="card-grid" id="subj-cards"></div>
+      </div>
+
+      <!-- ── PROFESORES ─────────────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-profesores">
+        <div class="panel">
+          <div class="panel-header"><h2>Participación de profesores</h2><div class="line"></div></div>
+          <canvas id="profChart" height="220"></canvas>
+        </div>
+        <div class="prof-grid" id="prof-cards"></div>
+      </div>
+
+      <!-- ── CANCELACIONES ──────────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-cancelaciones">
+        <div class="kpi-grid" id="cancel-kpis"></div>
+        <div class="panel">
+          <div class="panel-header"><h2>Cancelaciones por mes</h2><div class="line"></div></div>
+          <canvas id="cancelChart" height="110"></canvas>
         </div>
         <div class="panel">
-          <div class="panel-header">
-            <h2>Tendencia mensual de actividades</h2>
-            <div class="line"></div>
-          </div>
-          <canvas id="barChart" height="110"></canvas>
-          <div class="legend">
-            <div class="leg-item"><div class="leg-dot" style="background:#1e40af"></div>Clases con alumnos</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#7c3aed"></div>Sesiones admin</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Cancelaciones</div>
-          </div>
+          <div class="panel-header"><h2>Detalle de cancelaciones</h2><div class="line"></div></div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Fecha</th><th>Profesor</th><th>Materia</th><th>Grupo</th><th>Motivo</th></tr>
+            </thead>
+            <tbody id="cancel-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PLANEACIÓN ─────────────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-planeacion">
+        <div class="kpi-grid" id="plan-kpis"></div>
+        <div class="panel">
+          <div class="panel-header"><h2>Sesiones de planeación por mes</h2><div class="line"></div></div>
+          <canvas id="planChart" height="110"></canvas>
         </div>
         <div class="panel">
-          <div class="panel-header">
-            <h2>Top 5 profesores por sesiones</h2>
-            <div class="line"></div>
-          </div>
-          <canvas id="topChart" height="120"></canvas>
+          <div class="panel-header"><h2>Detalle de sesiones</h2><div class="line"></div></div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Fecha</th><th>Profesor</th><th>Materia</th><th>Actividad</th></tr>
+            </thead>
+            <tbody id="plan-tbody"></tbody>
+          </table>
         </div>
       </div>
-    </div>
 
-    <!-- ── MATERIAS ───────────────────────────────────────────────────────── -->
-    <div class="tab-content" id="tab-materias">
-      <div class="panel">
-        <div class="panel-header"><h2>Sesiones por materia</h2><div class="line"></div></div>
-        <canvas id="subjChart" height="200"></canvas>
+      <!-- ── ESCUELAS VISITANTES ────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-escuelas">
+        <div class="kpi-grid" id="escuelas-kpis"></div>
+        <div class="panel">
+          <div class="panel-header"><h2>Demos por mes</h2><div class="line"></div></div>
+          <canvas id="demoChart" height="110"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h2>Instituciones visitantes</h2><div class="line"></div></div>
+          <div class="school-grid" id="school-grid"></div>
+        </div>
       </div>
-      <div class="card-grid" id="subj-cards"></div>
-    </div>
 
-    <!-- ── PROFESORES ─────────────────────────────────────────────────────── -->
-    <div class="tab-content" id="tab-profesores">
-      <div class="panel">
-        <div class="panel-header"><h2>Participación de profesores</h2><div class="line"></div></div>
-        <canvas id="profChart" height="220"></canvas>
-      </div>
-      <div class="prof-grid" id="prof-cards"></div>
-    </div>
-
-    <!-- ── CANCELACIONES ──────────────────────────────────────────────────── -->
-    <div class="tab-content" id="tab-cancelaciones">
-      <div class="kpi-grid" id="cancel-kpis"></div>
-      <div class="panel">
-        <div class="panel-header"><h2>Cancelaciones por mes</h2><div class="line"></div></div>
-        <canvas id="cancelChart" height="110"></canvas>
-      </div>
-      <div class="panel">
-        <div class="panel-header"><h2>Detalle de cancelaciones</h2><div class="line"></div></div>
-        <table class="data-table">
-          <thead>
-            <tr><th>Fecha</th><th>Profesor</th><th>Materia</th><th>Grupo</th><th>Motivo</th></tr>
-          </thead>
-          <tbody id="cancel-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ── PLANEACIÓN ─────────────────────────────────────────────────────── -->
-    <div class="tab-content" id="tab-planeacion">
-      <div class="kpi-grid" id="plan-kpis"></div>
-      <div class="panel">
-        <div class="panel-header"><h2>Sesiones de planeación por mes</h2><div class="line"></div></div>
-        <canvas id="planChart" height="110"></canvas>
-      </div>
-      <div class="panel">
-        <div class="panel-header"><h2>Detalle de sesiones</h2><div class="line"></div></div>
-        <table class="data-table">
-          <thead>
-            <tr><th>Fecha</th><th>Profesor</th><th>Materia</th><th>Actividad</th></tr>
-          </thead>
-          <tbody id="plan-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ── ESCUELAS VISITANTES ────────────────────────────────────────────── -->
-    <div class="tab-content" id="tab-escuelas">
-      <div class="kpi-grid" id="escuelas-kpis"></div>
-      <div class="panel">
-        <div class="panel-header"><h2>Demos por mes</h2><div class="line"></div></div>
-        <canvas id="demoChart" height="110"></canvas>
-      </div>
-      <div class="panel">
-        <div class="panel-header"><h2>Instituciones visitantes</h2><div class="line"></div></div>
-        <div class="school-grid" id="school-grid"></div>
-      </div>
-    </div>
-
-  </div><!-- /wrap -->
+    </div><!-- /wrap -->
+  </div><!-- /content -->
 </div><!-- /main -->
 
 <script src="dashboard.js"></script>
