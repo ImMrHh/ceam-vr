@@ -1,21 +1,11 @@
 // ── Config ───────────────────────────────────────────────────────────────────
 const AUTH_URL = 'https://vr-lab-auth.6z5fznmp4m.workers.dev';
-const SCHOOLS  = [
-  'Inst. Canadiense','Col. Noil','Col. Mixcoac','Nueva Escocia',
-  'William James','Dos Naciones','Lolindir','Martha','Preston',
-  'Britannia','Vera Cruz','San Jerónimo','Escuelas varias'
-];
 const COLORS = [
   '#1e40af','#065f46','#7c3aed','#92400e','#991b1b',
   '#0369a1','#065f46','#1e3a5f','#5b21b6','#9a3412',
   '#1e40af','#065f46','#7c3aed','#92400e'
 ];
 const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const DEMO_SCHOOLS = new Set([
-  'Inst. Canadiense','Col. Noil','Col. Mixcoac','Nueva Escocia','William James',
-  'Dos Naciones','Lolindir','Martha','Preston','Britannia','Vera Cruz',
-  'San Jerónimo','Escuelas varias','Admisiones'
-]);
 const ADMIN_SUBJECTS = new Set(['R.V.','Mantenimiento','Admin']);
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -51,7 +41,7 @@ function getTipo(row) {
   if (row.TipoSesion) return row.TipoSesion;
   const m = (row.Materia||'').trim();
   const a = (row.Actividad||'').toLowerCase();
-  if (DEMO_SCHOOLS.has(m)) return 'Demo';
+  if (m === 'Demo') return 'Demo';
   if (ADMIN_SUBJECTS.has(m)) return a.includes('planeaci') ? 'Planeación' : 'Admin';
   if (a.includes('planeaci')) return 'Planeación';
   return 'Clase';
@@ -108,6 +98,7 @@ function rebuildActive() {
   if (id === 'profesores')    buildProfesores();
   if (id === 'cancelaciones') buildCancelaciones();
   if (id === 'planeacion')    buildPlaneacion();
+  if (id === 'escuelas')      buildEscuelas();
 }
 
 // ── PIN ───────────────────────────────────────────────────────────────────────
@@ -535,11 +526,82 @@ function buildPlaneacion() {
 
 // ── Escuelas ──────────────────────────────────────────────────────────────────
 function buildEscuelas() {
-  document.getElementById('school-grid').innerHTML = SCHOOLS.map((s,i) => {
-    const h = (i*27) % 360;
+  chartsBuilt.escuelas = true;
+  destroyChart('demoChart');
+
+  const demos = filtered.filter(r => r.Status === 'Confirmed' && getTipo(r) === 'Demo');
+
+  // Count sessions per school (field Grupo holds school name for Demo sessions)
+  const byCounts = {};
+  demos.forEach(r => {
+    const school = (r.Grupo||'').trim() || 'Sin nombre';
+    byCounts[school] = (byCounts[school]||0) + 1;
+  });
+  const sorted = Object.entries(byCounts).sort((a,b) => b[1]-a[1]);
+  const totalSchools = sorted.length;
+
+  // Best month
+  const byMonth = groupBy(demos, r => getMonthKey(r.Fecha));
+  const bestMonthKey = Object.entries(byMonth).sort((a,b) => b[1]-a[1])[0];
+  const bestMonthLabel = bestMonthKey ? `${getMonthLabel(bestMonthKey[0])} (${bestMonthKey[1]})` : '—';
+
+  // KPIs
+  document.getElementById('escuelas-kpis').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#ef4444"></div>
+      <div class="kpi-label">Sesiones demo</div>
+      <div class="kpi-val" style="color:var(--red)">${demos.length}</div>
+      <div class="kpi-sub">en el período</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#0369a1"></div>
+      <div class="kpi-label">Instituciones únicas</div>
+      <div class="kpi-val" style="color:#0369a1">${totalSchools}</div>
+      <div class="kpi-sub">escuelas visitantes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#065f46"></div>
+      <div class="kpi-label">Mes más activo</div>
+      <div class="kpi-val" style="color:var(--green);font-size:${bestMonthKey?'20px':'28px'}">${bestMonthLabel}</div>
+      <div class="kpi-sub">mayor número de demos</div>
+    </div>`;
+
+  // Monthly chart
+  const sortedMonths = Object.keys(groupBy(filtered, r => getMonthKey(r.Fecha))).sort();
+  const labels = sortedMonths.map(getMonthLabel);
+  const monthData = sortedMonths.map(m => demos.filter(r => getMonthKey(r.Fecha) === m).length);
+
+  new Chart(document.getElementById('demoChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{
+      label: 'Demos',
+      data: monthData,
+      backgroundColor: rgba('#ef4444', .75),
+      borderRadius: 4, borderSkipped: false
+    }]},
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: TT },
+      scales: {
+        x: { grid: { color: GRID }, ticks: { color: '#6b7280' } },
+        y: { grid: { color: GRID }, ticks: { color: '#6b7280', stepSize: 1 } }
+      }
+    }
+  });
+
+  // School cards
+  if (!sorted.length) {
+    document.getElementById('school-grid').innerHTML =
+      '<p style="color:#6b7280;font-size:13px;grid-column:1/-1">Sin sesiones demo en este período.</p>';
+    return;
+  }
+  document.getElementById('school-grid').innerHTML = sorted.map(([name, count], i) => {
+    const h = (i * 37) % 360;
+    const color = `hsl(${h},55%,40%)`;
     return `<div class="school-item">
-      <div class="school-dot" style="background:hsl(${h},55%,45%)"></div>
-      <span class="school-name">${s}</span>
+      <div class="school-dot" style="background:${color}"></div>
+      <span class="school-name">${name}</span>
+      <span class="school-count" style="color:${color};font-weight:600;font-size:13px;margin-left:auto">${count} sesión${count!==1?'es':''}</span>
     </div>`;
   }).join('');
 }
@@ -556,6 +618,7 @@ function switchTab(id, btn) {
     if (id==='profesores')    buildProfesores();
     if (id==='cancelaciones') buildCancelaciones();
     if (id==='planeacion')    buildPlaneacion();
+    if (id==='escuelas')      buildEscuelas();
   }
 }
 
