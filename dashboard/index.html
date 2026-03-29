@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VR Lab CEAM · Dashboard de Impacto</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary:        #0f3a7d;
+      --primary-light:  #1e5aa8;
+      --primary-lighter:#2e7bc0;
+      --accent:         #0ea5e9;
+      --accent-dark:    #0284c7;
+      --accent-light:   #38bdf8;
+      --bg-dark:        #0f172a;
+      --bg-dark2:       #1e293b;
+      --bg-light:       #f0f9ff;
+      --bg-card:        #ffffff;
+      --border:         #e0f2fe;
+      --border-dark:    #bae6fd;
+      --text-dark:      #0f172a;
+      --text-light:     #475569;
+      --text-muted:     #64748b;
+      --success:        #059669;
+      --warning:        #f59e0b;
+      --danger:         #dc2626;
+      --info:           #3b82f6;
+      --radius:         16px;
+      --shadow-sm:      0 1px 2px 0 rgba(15,58,125,.05);
+      --shadow-md:      0 4px 6px -1px rgba(15,58,125,.1);
+      --shadow-lg:      0 10px 15px -3px rgba(15,58,125,.15);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: var(--text-dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── PIN SCREEN ───────────────────────────────────────────────────── */
+    #pin-screen {
+      position: fixed; inset: 0; z-index: 100;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #pin-screen.hidden { display: none; }
+
+    .pin-card {
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 340px;
+      text-align: center;
+    }
+    .pin-logo {
+      width: 56px; height: 56px;
+      background: var(--accent); border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Clash Display', sans-serif;
+      font-size: 20px; font-weight: 700; color: var(--primary);
+      margin: 0 auto 20px;
+    }
+    .pin-title {
+      font-family: 'Clash Display', sans-serif;
+      font-size: 22px; font-weight: 700;
+      color: white; margin-bottom: 6px;
+    }
+    .pin-sub { font-size: 13px; color: rgba(255,255,255,.7); margin-bottom: 32px; }
+
+    .pin-dots {
+      display: flex; justify-content: center; gap: 16px; margin-bottom: 28px;
+    }
+    .pin-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.4);
+      background: transparent; transition: all .2s;
+    }
+    .pin-dot.filled  { background: white; border-color: white; }
+    .pin-dot.error   { background: #ef4444; border-color: #ef4444; }
+
+    .pin-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 12px;
+    }
+    .pin-btn {
+      padding: 16px; border-radius: 12px; border: none;
+      background: rgba(255,255,255,.1); color: white;
+      font-size: 20px; font-weight: 600; cursor: pointer;
+      transition: all .15s; font-family: 'Clash Display', sans-serif;
+    }
+    .pin-btn:hover  { background: rgba(255,255,255,.2); }
+    .pin-btn:active { transform: scale(.95); }
+    .pin-btn.del    { font-size: 18px; }
+
+    #pin-error {
+      min-height: 20px; font-size: 12px;
+      color: #fca5a5; margin-top: 8px;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%,60%  { transform: translateX(-8px); }
+      40%,80%  { transform: translateX(8px); }
+    }
+    .shake { animation: shake .4s ease; }
+
+    /* ── LOADING OVERLAY ─────────────────────────────────────────────── */
+    #loading-overlay {
+      display: none; position: fixed; inset: 0; z-index: 50;
+      background: rgba(15,58,125,.6); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .loader {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.2);
+      border-top-color: white;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay p { color: white; font-size: 14px; }
+
+    /* ── MAIN ────────────────────────────────────────────────────────── */
+    #main { display: none; }
+    #main.visible { display: block; }
+
+    /* Header / Hero */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white; padding: 48px 40px;
+      position: relative; overflow: hidden;
+    }
+    .header::before {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 600px; height: 300px;
+      background: radial-gradient(circle at 80% 50%, rgba(14,165,233,.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-content { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; }
+    .header-top {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 40px;
+    }
+    .header-brand       { display: flex; align-items: center; gap: 12px; }
+    .header-logo {
+      width: 48px; height: 48px; background: var(--accent); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Clash Display', sans-serif; font-size: 18px; font-weight: 700;
+      color: var(--primary);
+    }
+    .header-brand-text  { display: flex; flex-direction: column; }
+    .header-brand-name  { font-family: 'Clash Display', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -.5px; }
+    .header-brand-sub   { font-size: 12px; opacity: .85; }
+    .header-actions     { display: flex; align-items: center; gap: 16px; }
+    .header-period      { font-size: 13px; opacity: .9; font-weight: 500; }
+    .logout-btn {
+      padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.1); color: white; font-size: 12px;
+      font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,.2); }
+
+    .header-hero {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center;
+    }
+    .hero-left h1 {
+      font-family: 'Clash Display', sans-serif; font-size: 44px; font-weight: 700;
+      line-height: 1.2; margin-bottom: 16px; letter-spacing: -1px;
+    }
+    .hero-left .subtitle { font-size: 16px; opacity: .95; margin-bottom: 32px; }
+    .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .stat-box {
+      background: rgba(255,255,255,.1); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.2); border-radius: 12px; padding: 18px;
+      border-left: 4px solid var(--accent-light);
+    }
+    .stat-number {
+      font-family: 'Clash Display', sans-serif; font-size: 28px; font-weight: 700;
+      display: block; margin-bottom: 4px;
+    }
+    .stat-label { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .5px; }
+    .hero-chart {
+      background: rgba(255,255,255,.1); backdrop-filter: blur(10px);
+      border-radius: var(--radius); padding: 24px;
+      border: 1px solid rgba(255,255,255,.2);
+    }
+    .chart-title { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 16px; }
+    .hero-chart .chart-title { color: rgba(255,255,255,.9); }
+
+    /* Container */
+    .container { max-width: 1400px; margin: 0 auto; padding: 40px; }
+
+    /* Filter bar */
+    .filters { display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; align-items: center; }
+    .filter-btn {
+      padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border-dark);
+      background: white; color: var(--text-dark); font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all .2s;
+    }
+    .filter-btn.active  { background: var(--primary); color: white; border-color: var(--primary); }
+    .filter-btn:hover:not(.active) { border-color: var(--accent); background: var(--bg-light); }
+    .filter-date { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border-dark); font-size: 13px; color: var(--text-dark); background: white; }
+    .filter-apply {
+      padding: 10px 18px; border-radius: 8px; border: none;
+      background: var(--accent); color: white; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .filter-apply:hover { background: var(--accent-dark); }
+
+    /* KPI Grid */
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px; margin-bottom: 40px;
+    }
+    .metric-card {
+      background: white; border-radius: var(--radius); padding: 28px;
+      box-shadow: var(--shadow-md); border-top: 4px solid;
+      transition: all .3s; position: relative; overflow: hidden;
+    }
+    .metric-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+    .metric-card.primary  { border-top-color: var(--accent); }
+    .metric-card.success  { border-top-color: var(--success); }
+    .metric-card.warning  { border-top-color: var(--warning); }
+    .metric-card.info     { border-top-color: var(--info); }
+    .metric-label {
+      font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--text-muted); margin-bottom: 12px; font-weight: 600;
+    }
+    .metric-value {
+      font-family: 'Clash Display', sans-serif; font-size: 42px; font-weight: 700;
+      line-height: 1; margin-bottom: 8px; color: var(--primary);
+    }
+    .metric-sub    { font-size: 13px; color: var(--text-light); }
+    .metric-change {
+      display: inline-block; background: rgba(14,165,233,.1);
+      color: var(--accent-dark); padding: 3px 8px; border-radius: 4px;
+      font-size: 12px; font-weight: 600; margin-top: 8px;
+    }
+
+    /* Section */
+    .section {
+      background: white; border-radius: var(--radius); padding: 32px;
+      box-shadow: var(--shadow-md); margin-bottom: 24px;
+    }
+    .section-title {
+      font-family: 'Clash Display', sans-serif; font-size: 18px; font-weight: 700;
+      margin-bottom: 24px; color: var(--text-dark);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-title::before {
+      content: ''; width: 4px; height: 24px; background: var(--accent); border-radius: 2px;
+    }
+
+    /* Chart grid */
+    .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .chart-container { background: white; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-md); }
+
+    /* Insight box */
+    .insight-box {
+      background: linear-gradient(135deg, rgba(14,165,233,.1) 0%, rgba(56,189,248,.05) 100%);
+      border: 1px solid rgba(14,165,233,.3); border-left: 4px solid var(--accent);
+      border-radius: 12px; padding: 20px; margin: 24px 0;
+    }
+    .insight-title {
+      font-weight: 600; color: var(--accent-dark); margin-bottom: 6px;
+      font-size: 13px; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .insight-text { font-size: 14px; color: var(--text-dark); line-height: 1.7; }
+
+    /* Growth */
+    .growth-narrative {
+      background: linear-gradient(135deg, rgba(5,150,105,.1) 0%, rgba(5,150,105,.05) 100%);
+      border: 1px solid rgba(5,150,105,.3); border-left: 4px solid var(--success);
+      border-radius: 12px; padding: 20px; margin: 24px 0;
+    }
+    .growth-narrative-title { font-weight: 600; color: var(--success); margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+    .growth-narrative-text  { font-size: 14px; color: var(--text-dark); line-height: 1.6; }
+    .cycles-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+    .cycle-card {
+      background: var(--bg-light); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid;
+    }
+    .cycle-card.current   { border-left-color: var(--accent-dark); background: linear-gradient(135deg,rgba(14,165,233,.1),rgba(14,165,233,.05)); }
+    .cycle-card.projected { border-left-color: var(--warning);      background: linear-gradient(135deg,rgba(245,158,11,.1),rgba(245,158,11,.05)); }
+    .cycle-label  { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+    .cycle-number { font-family: 'Clash Display', sans-serif; font-size: 28px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+    .cycle-desc   { font-size: 12px; color: var(--text-light); margin-bottom: 12px; }
+    .cycle-badge  { display: inline-block; background: var(--primary); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .cycle-badge.projected { background: var(--warning); }
+
+    /* Stats table */
+    .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stats-table th {
+      text-align: left; padding: 12px; background: var(--bg-light);
+      border-bottom: 1px solid var(--border); font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; font-size: 11px;
+    }
+    .stats-table td       { padding: 14px 12px; border-bottom: 1px solid var(--border); color: var(--text-dark); }
+    .stats-table tr:hover td { background: var(--bg-light); }
+    .stats-table td.number{ font-weight: 600; color: var(--accent-dark); }
+
+    /* Cards grid */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+    .card {
+      background: var(--bg-light); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; text-align: center; border-top: 3px solid;
+      transition: all .2s;
+    }
+    .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .card-value { font-family: 'Clash Display', sans-serif; font-size: 24px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+    .card-label { font-size: 12px; color: var(--text-muted); }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .metric-card { animation: fadeInUp .5s ease-out both; }
+    .metric-card:nth-child(1) { animation-delay: .05s; }
+    .metric-card:nth-child(2) { animation-delay: .12s; }
+    .metric-card:nth-child(3) { animation-delay: .19s; }
+    .metric-card:nth-child(4) { animation-delay: .26s; }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .header-hero, .chart-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .header    { padding: 32px 20px; }
+      .container { padding: 20px; }
+      .section   { padding: 20px; }
+      .hero-left h1   { font-size: 32px; }
+      .metric-value   { font-size: 32px; }
+      .metrics-grid   { grid-template-columns: 1fr; }
+      .cards-grid     { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── PIN SCREEN ─────────────────────────────────────────────────────── -->
+  <div id="pin-screen">
+    <div class="pin-card">
+      <div class="pin-logo">VR</div>
+      <div class="pin-title">Dashboard de Impacto</div>
+      <div class="pin-sub">Acceso restringido · Coordinación</div>
+
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+
+      <div class="pin-grid">
+        <button class="pin-btn" onclick="pinPress('1')">1</button>
+        <button class="pin-btn" onclick="pinPress('2')">2</button>
+        <button class="pin-btn" onclick="pinPress('3')">3</button>
+        <button class="pin-btn" onclick="pinPress('4')">4</button>
+        <button class="pin-btn" onclick="pinPress('5')">5</button>
+        <button class="pin-btn" onclick="pinPress('6')">6</button>
+        <button class="pin-btn" onclick="pinPress('7')">7</button>
+        <button class="pin-btn" onclick="pinPress('8')">8</button>
+        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        <button class="pin-btn del" onclick="pinPress('del')">⌫</button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn" style="opacity:.3;cursor:default"></button>
+      </div>
+
+      <div id="pin-error"></div>
+    </div>
+  </div>
+
+  <!-- ── LOADING OVERLAY ─────────────────────────────────────────────────── -->
+  <div id="loading-overlay">
+    <div class="loader"></div>
+    <p>Cargando datos…</p>
+  </div>
+
+  <!-- ── MAIN DASHBOARD ─────────────────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- Header Hero -->
+    <div class="header">
+      <div class="header-content">
+        <div class="header-top">
+          <div class="header-brand">
+            <div class="header-logo">VR</div>
+            <div class="header-brand-text">
+              <div class="header-brand-name">VR Lab Program</div>
+              <div class="header-brand-sub">Centro Escolar Anglo Mexicano</div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <span class="header-period">Ciclo escolar 2025 – 2026</span>
+            <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+          </div>
+        </div>
+
+        <div class="header-hero">
+          <div class="hero-left">
+            <h1>Impacto Educativo en Realidad Virtual</h1>
+            <div class="subtitle">Análisis de sesiones, participación docente e impacto institucional</div>
+            <div class="hero-stats">
+              <div class="stat-box">
+                <span class="stat-number" id="stat-sessions">—</span>
+                <span class="stat-label">Sesiones VR</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-number" id="stat-professors">—</span>
+                <span class="stat-label">Profesores Activos</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-number" id="stat-growth">—</span>
+                <span class="stat-label">Variación último mes</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-number" id="stat-schools">—</span>
+                <span class="stat-label">Instituciones Visitantes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-chart">
+            <div class="chart-title">Tendencia Mensual · Clases Impartidas</div>
+            <canvas id="trendChart" style="max-height:200px"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+
+      <!-- Filter bar -->
+      <div class="filters">
+        <button class="filter-btn active" id="btn-full"   onclick="setFilter('full')">Todo el ciclo</button>
+        <button class="filter-btn"        id="btn-recent" onclick="setFilter('recent')">Últimos 3 meses</button>
+        <span style="color:var(--text-muted);font-size:13px;padding:0 4px">o rango:</span>
+        <input type="date" id="filter-from" class="filter-date">
+        <input type="date" id="filter-to"   class="filter-date">
+        <button class="filter-apply" onclick="applyCustomFilter()">Aplicar</button>
+      </div>
+
+      <!-- KPI Cards (rendered by views/metrics.js) -->
+      <div id="metrics-grid" class="metrics-grid"></div>
+
+      <!-- Insight callout -->
+      <div class="insight-box">
+        <div class="insight-title">💡 Impacto Actual</div>
+        <div class="insight-text" id="insight-text">Cargando…</div>
+      </div>
+
+      <!-- Growth Section -->
+      <div class="section">
+        <div class="section-title">Estrategia de Crecimiento</div>
+
+        <div class="growth-narrative">
+          <div class="growth-narrative-title">📈 Roadmap de Expansión (24 meses)</div>
+          <div class="growth-narrative-text">
+            El programa VR Lab de CEAM demuestra viabilidad operativa y demanda educativa.
+            La proyección de crecimiento refleja adopción sostenida y expansión de la base docente en los próximos dos ciclos.
+          </div>
+        </div>
+
+        <div id="cycles-grid" class="cycles-grid"></div>
+
+        <div class="chart-title" style="margin-top:32px;margin-bottom:16px">Proyección de Crecimiento</div>
+        <canvas id="growthChart" style="max-height:300px"></canvas>
+
+        <div class="insight-box" style="margin-top:20px">
+          <div class="insight-title">📊 KPIs de Adopción</div>
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Ciclo 1 (Actual)</th>
+                <th>Ciclo 2 (Proyectado)</th>
+                <th>Ciclo 3 (Proyectado)</th>
+              </tr>
+            </thead>
+            <tbody id="growth-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Activity Section -->
+      <div class="section">
+        <div class="section-title">Análisis de Actividad</div>
+        <div class="chart-grid">
+          <div class="chart-container">
+            <div class="chart-title">Top 5 Materias · Sesiones de Clase</div>
+            <canvas id="subjChart"></canvas>
+          </div>
+          <div class="chart-container">
+            <div class="chart-title">Distribución por Tipo de Sesión</div>
+            <canvas id="typeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Professors -->
+      <div class="section">
+        <div class="section-title">Profesores Destacados</div>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Profesor</th>
+              <th>Sesiones</th>
+              <th>Materias</th>
+              <th>Participación</th>
+            </tr>
+          </thead>
+          <tbody id="prof-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Materias -->
+      <div class="section">
+        <div class="section-title">Distribución por Materia</div>
+        <div id="materias-grid" class="cards-grid"></div>
+      </div>
+
+    </div><!-- /container -->
+  </div><!-- /main -->
+
+  <!-- ── SCRIPTS (orden de dependencias) ───────────────────────────────── -->
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/helpers.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/views/header.js"></script>
+  <script src="js/views/metrics.js"></script>
+  <script src="js/views/insight.js"></script>
+  <script src="js/views/growth.js"></script>
+  <script src="js/views/activity.js"></script>
+  <script src="js/views/professors.js"></script>
+  <script src="js/views/materias.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
+
+  <script>
+    // ── Entry point ────────────────────────────────────────────────────────
+    async function enterDash() {
+      document.getElementById('pin-screen').classList.add('hidden');
+      document.getElementById('main').classList.add('visible');
+      await loadData();
+    }
+
+    // Check for existing valid session on page load
+    (async () => {
+      const valid = await checkExistingSession();
+      if (valid) enterDash();
+    })();
+  </script>
+
+</body>
+</html>
